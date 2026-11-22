@@ -1,30 +1,31 @@
 import * as THREE from "three";
-import { rand, col, jitter, lam, smoothstep, topHeight, makeIsland, makeTree, makeLand, makeClouds } from "./nature.js";
-import { PROPS } from "./props.js";
+import { rand, col, jitter, lam, topHeight, makeIsland, makeTree, makeLand, makeClouds } from "./nature.js";
+import { makeGallery } from "./gallery.js";
 import { createPaint } from "./paint.js";
 
 /*
   The painted world. One place per page section ("stop"), joined by a flight path.
-  Project islands are generated from content/projects.js, so adding a project adds an island.
+  The page scrolls in steps (see buildSteps in ui.js): one per stop, plus one per piece at Work.
+  Work is a gallery built from content/projects.js (see gallery.js), so adding a project adds a frame.
 */
 
 const BASE = {
   light: {
     top: "#7FA3C8", horizon: "#F4D6B4", bottom: "#EBC9C4", sunColor: "#FFE2A8", sunDir: [-.5, .35, -.8], stars: 0,
     hemiSky: "#E8E4F0", hemiGround: "#B98FA0", hemiI: 1.9, sunI: 3, fog: "#EED8C2", cloud: "#E9B9C0", cloudI: .12,
-    shadowTint: [.86, .86, 1.12], lightTint: [1.03, 1, .95], window: .15, pColor: "#FFE7A8", pGlow: .45, pSize: 2.2, fall: "#F3F6F8",
+    shadowTint: [.86, .86, 1.12], lightTint: [1.03, 1, .95], window: .15, pColor: "#FFE7A8", pGlow: .45, pSize: 2.2, fall: "#F3F6F8", canvasGlow: .12,
   },
   dark: {
     top: "#151D2B", horizon: "#D47C7E", bottom: "#3A3346", sunColor: "#FF9E7A", sunDir: [-.55, .06, -.83], stars: 1,
     hemiSky: "#8F9FCC", hemiGround: "#5A4060", hemiI: 1.3, sunI: 1.4, fog: "#5A4558", cloud: "#6A4A60", cloudI: .3,
-    shadowTint: [.78, .84, 1.18], lightTint: [1.14, .96, .86], window: 3.2, pColor: "#FFD27A", pGlow: 1.2, pSize: 3.2, fall: "#C9D6EA",
+    shadowTint: [.78, .84, 1.18], lightTint: [1.14, .96, .86], window: 3.2, pColor: "#FFD27A", pGlow: 1.2, pSize: 3.2, fall: "#C9D6EA", canvasGlow: .42,
   },
 };
 
-/* each stop: where it is, how the camera frames it, and its color mood */
+/* each stop: where it is, how the camera frames it, and its color mood (Work's framing comes from gallery.js) */
 const PLACES = {
   home: { at: [0, 0, 0], cam: [-2, 5.5, 38], look: [-6.8, -.8, 0], light: {}, dark: {} },
-  work: { at: [70, -2, -26], cam: [-12, 9, 62], look: [1, -1, -3],
+  work: { at: [70, 2, -26],
     light: { top: "#A99BC8", horizon: "#F4C9B8", bottom: "#E7B3BB", fog: "#EFCFC6", hemiSky: "#F2E0E6", sunColor: "#FFD9B0" },
     dark: { top: "#1E1A33", horizon: "#C9687E" } },
   notes: { at: [138, 5, -8], cam: [-5, 3.5, 28], look: [-7.5, .8, 0],
@@ -41,7 +42,7 @@ const conv = (t) => {
   return o;
 };
 
-export function createWorld(canvas, { projects, stops }) {
+export function createWorld(canvas, { projects, steps }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(1);
   renderer.shadowMap.enabled = true;
@@ -85,9 +86,11 @@ export function createWorld(canvas, { projects, stops }) {
   sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -28, right: 28, top: 28, bottom: -28, near: 1, far: 100 });
   sun.shadow.bias = -.0015;
-  scene.add(hemi, sun, sun.target);
+  /* a soft light from the viewer's side, switched on at the gallery so the pieces aren't backlit */
+  const galleryLight = new THREE.DirectionalLight(col("#FFF0DA"), 0);
+  scene.add(hemi, sun, sun.target, galleryLight, galleryLight.target);
   scene.fog = new THREE.Fog(col("#EED8C2"), 70, 320);
-  const SUN_OFFSET = new THREE.Vector3(-10, 18, 16);
+  const SUN_OFFSET = new THREE.Vector3(-10, 18, 16), LAMP_OFFSET = new THREE.Vector3(-4, 8, 0);
 
   /* the land below and the clouds between */
   world.add(makeLand({ center: new THREE.Vector3(100, 0, -70), width: 460, depth: 220, sea: -17 }));
@@ -136,23 +139,9 @@ export function createWorld(canvas, { projects, stops }) {
   home.position.copy(placeAt("home"));
   world.add(home);
 
-  /* work: one island per project, laid out from the content file */
-  const W = placeAt("work");
-  const PS = .42, ground = (x, z) => topHeight(x, z, PS);
-  const isles = projects.map((p, i) => {
-    const g = new THREE.Group();
-    g.add(makeIsland(PS, { tufts: 320 }));
-    (PROPS[p.island] || PROPS.tree)(g, ground);
-    const n = projects.length;
-    const pos = W.clone().add(new THREE.Vector3(i * 7 - (n - 1) * 3.5 + 12, Math.sin(i * 1.9) * 2.2, -Math.cos(i * .9) * 3 - (i % 2) * 5));
-    g.position.copy(pos);
-    g.rotation.y = -.5 + i * .4;
-    g.scale.setScalar(1.7);
-    g.userData = { y: pos.y, phase: i * 1.3 };
-    world.add(g);
-    islets.push(g);
-    return pos;
-  });
+  /* work: a salon wall of framed pieces, one per project */
+  const gallery = makeGallery(projects, placeAt("work"));
+  world.add(gallery.group);
 
   /* notes: a library island with a stack of books and flying pages */
   const L = placeAt("notes");
@@ -223,15 +212,28 @@ export function createWorld(canvas, { projects, stops }) {
   particles.layers.set(1);
   world.add(particles);
 
-  /* the flight path and the color moods follow the order of stops */
-  const ids = stops.filter((id) => PLACES[id]);
-  const pals = { light: ids.map((id) => conv({ ...BASE.light, ...PLACES[id].light })), dark: ids.map((id) => conv({ ...BASE.dark, ...PLACES[id].dark })) };
-  let camPath, lookPath;
+  /* the flight path and the color moods follow the scroll steps */
+  const list = steps.filter((st) => PLACES[st.stop]);
+  const pieceStep = (i) => list.findIndex((st) => st.stop === "work" && st.piece === i);
+  const pals = { light: list.map((st) => conv({ ...BASE.light, ...PLACES[st.stop].light })), dark: list.map((st) => conv({ ...BASE.dark, ...PLACES[st.stop].dark })) };
+  const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  let camPath, lookPath, rise = [];
+  function viewOf(st, narrow) {
+    const v = { cam: new THREE.Vector3(), look: new THREE.Vector3() };
+    if (st.stop === "work") return st.piece >= 0 ? gallery.pieceView(st.piece, tan, narrow, false, v) : gallery.wallView(tan, narrow, v);
+    const pl = PLACES[st.stop], c = new THREE.Vector3(...pl.cam), l = new THREE.Vector3(...pl.look);
+    if (narrow) { c.set(c.x + 4, c.y, c.z * 1.45); l.set(0, l.y - 2.5, l.z); }
+    v.cam.copy(placeAt(st.stop)).add(c); v.look.copy(placeAt(st.stop)).add(l);
+    return v;
+  }
   function buildPaths() {
     const narrow = innerWidth / innerHeight < 1;
-    const pts = (key, f) => ids.map((id) => placeAt(id).add(f(new THREE.Vector3(...PLACES[id][key]))));
-    camPath = new THREE.CatmullRomCurve3(pts("cam", (v) => (narrow ? v.set(v.x + 4, v.y, v.z * 1.45) : v)), false, "centripetal");
-    lookPath = new THREE.CatmullRomCurve3(pts("look", (v) => (narrow ? v.set(0, v.y - 2.5, v.z) : v)), false, "centripetal");
+    gallery.layout(narrow);
+    const views = list.map((st) => viewOf(st, narrow));
+    camPath = new THREE.CatmullRomCurve3(views.map((v) => v.cam), false, "centripetal");
+    lookPath = new THREE.CatmullRomCurve3(views.map((v) => v.look), false, "centripetal");
+    /* rise a little between places, less between neighbouring pieces */
+    rise = views.map((v, k) => (views[k + 1] ? Math.min(5, v.cam.distanceTo(views[k + 1].cam) * .07) : 0));
   }
 
   const paint = createPaint(renderer, camera);
@@ -262,22 +264,40 @@ export function createWorld(canvas, { projects, stops }) {
     clouds.mat.emissive.copy(p.cloud); clouds.mat.emissiveIntensity = p.cloudI;
     paint.material.uniforms.shadowTint.value.copy(p.shadowTint); paint.material.uniforms.lightTint.value.copy(p.lightTint);
     windowMat.emissiveIntensity = p.window;
+    canvasGlow = p.canvasGlow;
     pU.color.value.copy(p.pColor); pU.glow.value = p.pGlow; pU.size.value = p.pSize;
     fallU.tint.value.copy(p.fall);
   }
 
   /* state driven by the page */
-  const state = { target: 0, prog: 0, focus: -1, focusW: 0, mode: 0, modeTarget: 0, dark: document.documentElement.dataset.theme === "dark" ? 1 : 0 };
+  let canvasGlow = .12;
+  const state = { target: 0, prog: 0, focus: -1, focusW: 0, highlight: -1, mode: 0, modeTarget: 0, dark: document.documentElement.dataset.theme === "dark" ? 1 : 0 };
   const pointer = { x: 0, y: 0, sx: 0, sy: 0 };
   if (!reduceMotion) {
     addEventListener("pointermove", (e) => { pointer.x = e.clientX / innerWidth * 2 - 1; pointer.y = e.clientY / innerHeight * 2 - 1; });
     document.addEventListener("pointerleave", () => { pointer.x = pointer.y = 0; });
   }
 
+  /* clicking a frame opens its piece, but only while looking at the gallery */
+  let onPick = null, hover = -1;
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  const workSteps = list.map((st, k) => (st.stop === "work" ? k : -1)).filter((k) => k >= 0);
+  const atGallery = () => state.focus < 0 && workSteps.some((k) => Math.abs(state.prog - k) < .35);
+  function frameAt(e) {
+    if (e.target !== canvas || !atGallery()) return -1;
+    ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    return gallery.pick(ray.ray);
+  }
+  addEventListener("pointermove", (e) => {
+    hover = frameAt(e);
+    canvas.style.cursor = hover >= 0 ? "pointer" : "";
+  });
+  addEventListener("click", (e) => { const i = frameAt(e); if (i >= 0) onPick?.(i); });
+
   const clock = new THREE.Clock();
-  const look = new THREE.Vector3(), focusV = new THREE.Vector3(), tmp = new THREE.Vector3();
+  const look = new THREE.Vector3(), fv = { cam: new THREE.Vector3(), look: new THREE.Vector3() };
   let slow = 0;
-  const workIndex = ids.indexOf("work");
   function frame() {
     requestAnimationFrame(frame);
     if (document.hidden) return;
@@ -294,16 +314,19 @@ export function createWorld(canvas, { projects, stops }) {
     for (const key of Object.keys(light)) pal[key] = light[key]?.clone ? light[key].clone().lerp(dark[key], state.dark) : light[key] + (dark[key] - light[key]) * state.dark;
     applyPalette(pal);
 
-    /* camera along the path, nudged toward a focused project and the pointer */
-    const u = ids.length > 1 ? Math.min(1, Math.max(0, state.prog / (ids.length - 1))) : 0;
+    /* camera along the path; an open piece slides aside for its detail sheet */
+    const u = list.length > 1 ? Math.min(1, Math.max(0, state.prog / (list.length - 1))) : 0;
     camPath.getPoint(u, camera.position);
     lookPath.getPoint(u, look);
-    camera.position.y += Math.sin((state.prog % 1) * Math.PI) * 5;
-    const nearWork = workIndex < 0 ? 0 : Math.max(0, 1 - Math.abs(state.prog - workIndex) * 2);
-    focusV.lerp(state.focus >= 0 ? isles[state.focus] : look, k(2.5));
-    state.focusW += ((state.focus >= 0 ? nearWork : 0) - state.focusW) * k(2.5);
-    look.lerp(focusV, state.focusW * .6);
-    camera.position.lerp(tmp.copy(focusV).add(new THREE.Vector3(-6, 3, 18)), state.focusW * .5);
+    const seg = Math.min(list.length - 1, Math.floor(state.prog));
+    camera.position.y += Math.sin((state.prog - seg) * Math.PI) * (rise[seg] || 0);
+    const fs = state.focus >= 0 ? pieceStep(state.focus) : -1;
+    state.focusW += ((fs >= 0 ? Math.max(0, 1 - Math.abs(state.prog - fs) * 2) : 0) - state.focusW) * k(3);
+    if (state.focusW > .001 && fs >= 0) {
+      gallery.pieceView(state.focus, tan, innerWidth / innerHeight < 1, true, fv);
+      camera.position.lerp(fv.cam, state.focusW);
+      look.lerp(fv.look, state.focusW);
+    }
     pointer.sx += (pointer.x - pointer.sx) * k(2.5); pointer.sy += (pointer.y - pointer.sy) * k(2.5);
     camera.position.x += pointer.sx * 2 + Math.sin(t * .06) * 1.2;
     camera.position.y -= pointer.sy * 1.1;
@@ -311,10 +334,15 @@ export function createWorld(canvas, { projects, stops }) {
     camera.lookAt(look);
     sky.position.copy(camera.position);
     sun.target.position.copy(look); sun.position.copy(look).add(SUN_OFFSET);
+    const outside = workSteps.length ? Math.max(workSteps[0] - state.prog, state.prog - workSteps.at(-1), 0) : 9;
+    galleryLight.intensity = Math.max(0, 1 - outside * 1.4) * (.9 + state.dark * .5);
+    galleryLight.position.copy(camera.position).add(LAMP_OFFSET);
+    galleryLight.target.position.copy(look);
 
     /* life */
     home.position.y = Math.sin(t * .4) * .12;
     islets.forEach((g) => { g.position.y = g.userData.y + Math.sin(t * .5 + g.userData.phase) * .25; g.rotation.y = t * .03 + g.userData.phase; });
+    gallery.tick(t, dt, state.highlight >= 0 ? state.highlight : hover, canvasGlow);
     pages.forEach((pg, i) => {
       const a = t * .25 + i * .45, r = 3.2 + (i % 3) * .6;
       pg.position.set(L.x + Math.cos(a) * r, L.y + 2.2 + Math.sin(t * .6 + i) * .6 + (i % 4) * .5, L.z + Math.sin(a) * r);
@@ -332,7 +360,12 @@ export function createWorld(canvas, { projects, stops }) {
     /* p: 0 = first stop, 1 = second stop, ... */
     setProgress(p) { state.target = p; },
     jumpTo(p) { state.target = state.prog = p; },
+    /* piece i has its detail sheet open, or -1 */
     focusProject(i) { state.focus = i; },
+    /* lift frame i toward the viewer, or -1 */
+    highlight(i) { state.highlight = i; },
+    /* fn(i) is called when frame i is clicked */
+    onPick(fn) { onPick = fn; },
     setMode(m) { state.modeTarget = m === "ink" ? 1 : 0; },
   };
 }

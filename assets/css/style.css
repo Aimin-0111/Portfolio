@@ -1,4 +1,5 @@
 *, *::before, *::after { box-sizing: border-box; }
+:root { --rule: color-mix(in srgb, var(--ink) 20%, transparent); }
 html { scroll-snap-type: y mandatory; }
 html.sheet-open { overflow: hidden; }
 body {
@@ -29,16 +30,19 @@ h1, h2, h3 { margin: 0; }
 .theme-toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 [data-theme="light"] .icon-moon, [data-theme="dark"] .icon-sun { display: none; }
 
-/* one panel per stop, shown when you arrive */
+/* the text for each stop, shown when you arrive */
 .stops { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
 .stop { position: absolute; left: clamp(1.25rem, 5vw, 4.5rem); top: 50%; width: min(460px, calc(100% - 2.5rem)); opacity: 0; transform: translateY(calc(-50% + 18px)); transition: opacity .6s ease, transform .8s cubic-bezier(.2, 1, .3, 1); pointer-events: none; }
 .stop.on { opacity: 1; transform: translateY(-50%); pointer-events: auto; }
+.sheet-open .stop.on { opacity: 0; pointer-events: none; }
 .stop-home { width: min(760px, calc(100% - 2.5rem)); }
-.stop-work { width: min(720px, calc(100% - 2.5rem)); }
-.panel { background: color-mix(in srgb, var(--paper) 90%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); border-radius: 20px; padding: 1.5rem 1.6rem 1.4rem; }
-.panel h2, .sheet h2 { font-family: var(--font-display); font-weight: 300; font-size: clamp(2.1rem, 3.6vw, 2.8rem); line-height: 1; font-variation-settings: "SOFT" 100, "WONK" 1; }
-.panel h2 { margin-bottom: .5rem; }
-.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+.stop-work { width: min(420px, calc(100% - 2.5rem)); }
+/* words sit straight on the world, like wall text, with a soft mist behind them */
+.stop::before { content: ""; position: absolute; inset: -24% -32% -24% -50%; z-index: -1; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--paper) 80%, transparent) 40%, transparent); }
+.stop-piece::before { display: none; }
+.wall h2, .sheet h2 { font-family: var(--font-display); font-weight: 300; font-size: clamp(2.4rem, 4vw, 3.2rem); line-height: 1; font-variation-settings: "SOFT" 100, "WONK" 1; }
+.wall h2 { margin: .2rem 0 .6rem; }
+.wall .lede { font-size: 1.1rem; }
 .muted { color: var(--muted); }
 
 .mega { font-family: var(--font-display); font-weight: 300; font-size: clamp(3.2rem, 8vw, 7.5rem); line-height: .95; letter-spacing: -.02em; font-variation-settings: "SOFT" 100, "WONK" 1; margin: 0 0 1.25rem; max-width: 10.5ch; }
@@ -47,17 +51,37 @@ h1, h2, h3 { margin: 0; }
 .cta { margin-top: 1rem; padding: .7rem 1.2rem; border-radius: 999px; background: var(--btn); color: var(--on-btn); font-weight: 500; }
 .cta:hover { filter: brightness(1.06); }
 
-/* work overview: every project at a glance */
-.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin-top: .6rem; max-height: 58vh; overflow: auto; overscroll-behavior: contain; padding: 2px; }
-.card { display: flex; flex-direction: column; gap: .15rem; padding: .85rem .95rem; border-radius: 14px; background: color-mix(in srgb, var(--card) 80%, transparent); border: 1px solid transparent; color: var(--ink); text-decoration: none; transition: border-color .2s, transform .2s; }
-.card:hover, .card:focus-visible { border-color: var(--border); transform: translateY(-2px); }
-.card strong { font-family: var(--font-display); font-weight: 400; font-size: 1.35rem; line-height: 1.15; }
-.card .summary { color: var(--muted); font-size: .93rem; line-height: 1.4; }
+/* room guide: the list of pieces on the gallery wall, and of notes */
+.guide { list-style: none; padding: 0; margin: 1.1rem 0 0; border-top: 1px solid var(--rule); }
+.guide li > * { display: grid; grid-template-columns: 2rem 1fr auto; align-items: baseline; gap: .8rem; padding: .55rem .15rem; border-bottom: 1px solid var(--rule); color: var(--ink); text-decoration: none; }
+.guide .t { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.2; }
+.guide .k { color: var(--muted); font-size: .88rem; text-align: right; }
+.guide a:hover .t, .guide a:focus-visible .t, .guide a:hover .label { color: var(--rose-text); }
+.guide .teaser { display: block; margin-top: .2rem; font-family: var(--font-body); font-size: .92rem; line-height: 1.4; color: var(--muted); }
+
+/* the wall label beside each piece */
+.stop-piece { width: min(350px, calc(100% - 2.5rem)); }
+.plaque { background: var(--card); padding: 1.1rem 1.3rem 1rem; border-radius: 3px; box-shadow: 0 1px 2px rgb(40 30 20 / .12), 0 18px 40px -24px rgb(40 30 20 / .5); }
+.plaque h2 { font-size: 2.05rem; line-height: 1.05; margin: .4rem 0 .2rem; }
+.plaque p { margin: 0; }
+.plaque .medium { font-family: var(--font-display); font-style: italic; font-size: 1.05rem; }
+.plaque .credit { color: var(--muted); font-size: .9rem; }
+.plaque .desc { margin: .85rem 0 .6rem; }
+.plaque-foot { display: flex; justify-content: space-between; align-items: center; margin-top: .9rem; padding-top: .75rem; border-top: 1px solid var(--rule); }
+.more { color: var(--rose-text); font-weight: 500; text-decoration: none; }
+.more:hover { text-decoration: underline; }
+.walk { display: flex; gap: .3rem; }
+.walk button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--rule); color: var(--muted); }
+.walk button:hover { color: var(--ink); border-color: var(--ink); }
+
+/* the picture: crisp in the detail sheet; on the label only when there is no 3D world to hang it in */
+.shot { margin: 1rem 0 0; }
+.shot img, .plaque-shot img { display: block; width: 100%; height: auto; border-radius: 6px; }
+.plaque-shot { display: none; margin: 0 0 .8rem; }
+.no-world .plaque-shot { display: block; }
+
 .tags { display: flex; flex-wrap: wrap; gap: .3rem; list-style: none; padding: 0; margin: .4rem 0 0; }
 .tags li { font-family: var(--font-mono); font-size: var(--step-label); padding: .05rem .5rem; border-radius: 999px; background: var(--sunk); color: var(--muted); }
-
-.notes { list-style: none; padding: 0; margin: .8rem 0 0; display: grid; gap: .6rem; }
-.notes .label { display: inline-block; min-width: 3.5rem; }
 .links { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-top: 1rem; }
 
 /* project detail */
@@ -88,7 +112,10 @@ h1, h2, h3 { margin: 0; }
   .stop { top: auto; bottom: 4.25rem; transform: translateY(18px); }
   .stop.on { transform: none; }
   .stop-home { bottom: 28vh; }
-  .cards { grid-template-columns: 1fr; max-height: 52vh; }
+  .stop::before { inset: -14% -20%; }
+  .guide .k { display: none; }
+  .guide li > * { padding: .4rem .1rem; }
+  .plaque .desc { margin: .5rem 0 .4rem; }
   .sheet { top: 3.5rem; left: .5rem; right: .5rem; bottom: .5rem; width: auto; transform: translateY(110%); }
   .dots span { display: none; }
 }

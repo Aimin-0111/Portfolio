@@ -26,7 +26,6 @@ const SPECKS = ["#D9667F", "#E5C36A", "#F3E9D2", "#9DB8D0", "#B9A0C8"].map(col);
 const ROCK = ["#B49590", "#A78A8E", "#C17A7E", "#9A8D94", "#C8A890", "#8B8A9A"].map(col);
 const BLOSSOM = ["#E8899A", "#F0A0AE", "#D9667F", "#F6C6C9", "#E7CE86"].map(col);
 const LEAVES = ["#6E9A62", "#86A36B", "#5F8A5A", "#94BB8A", "#7FA06A"].map(col);
-const FIELDS = ["#86A36B", "#A9B58D", "#7FA06A", "#D8C27A", "#B9A0C8", "#9EB394", "#C9A27E", "#E0B7B9"].map(col);
 
 /* height of an island's grassy top at (x, z), for an island of scale s */
 export const topHeight = (x, z, s) => {
@@ -123,25 +122,34 @@ export function makeTree(x, z, size, blossom, ground) {
   return g;
 }
 
-/* the land below: rolling hills, patchwork fields, a coast and the sea */
+/* the land below: rolling hills, a coast and the sea, colored like real ground */
+const MEADOW = col("#7E9E64"), MEADOW_DEEP = col("#5F8656"), DRY = col("#A7AE7C"), EARTH = col("#9C8A6E"), STONE = col("#9A9088"), SAND = col("#E3D2B0"), SHALLOW = col("#9DB8D0");
 export function makeLand({ center, width, depth, sea }) {
   const group = new THREE.Group();
+  const heightAt = (x, z) => {
+    const coast = smoothstep(-depth * .18, depth * .3, -(z - center.z) + (fbm(x * .01, 4, 1) - .5) * 70);
+    const hills = (fbm(x * .011, 1.7, z * .011) - .32) * 34 + (fbm(x * .05, 3, z * .05) - .5) * 4;
+    return sea - 3 + coast * Math.max(-1, hills + 6);
+  };
   const geo = new THREE.PlaneGeometry(width, depth, 240, 100);
   geo.rotateX(-Math.PI / 2);
   const pos = geo.attributes.position, colors = [];
-  const sand = col("#E8D2B0");
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i) + center.x, z = pos.getZ(i) + center.z;
-    const coast = smoothstep(-depth * .18, depth * .3, -(z - center.z) + (fbm(x * .01, 4, 1) - .5) * 70);
-    const hills = (fbm(x * .011, 1.7, z * .011) - .32) * 34 + (fbm(x * .05, 3, z * .05) - .5) * 4;
-    const y = sea - 3 + coast * Math.max(-1, hills + 6);
+    const y = heightAt(x, z);
     pos.setY(i, y);
+    const slope = Math.hypot(heightAt(x + 1, z) - y, heightAt(x, z + 1) - y);
+    const above = y - sea;
     let c;
-    if (y < sea + .5) c = sand.clone().lerp(col("#9DB8D0"), smoothstep(sea + .4, sea - 2, y));
+    if (above < .6) c = SAND.clone().lerp(SHALLOW, smoothstep(.4, -2, above));
     else {
-      const cell = hash3(Math.floor(x / 11), 7, Math.floor(z / 8));
-      c = jitter(FIELDS[Math.floor(cell * FIELDS.length)], .1);
-      if (y > sea + 14) c.lerp(col("#A78A8E"), smoothstep(sea + 14, sea + 22, y));
+      const patch = fbm(x * .018, 5.5, z * .018);
+      c = MEADOW.clone().lerp(MEADOW_DEEP, smoothstep(.42, .7, patch));
+      c.lerp(DRY, smoothstep(9, 18, above) * .7);
+      c.lerp(SAND, smoothstep(2.2, .6, above));
+      c.lerp(EARTH, smoothstep(.55, 1.1, slope) * .8);
+      c.lerp(STONE, smoothstep(19, 26, above) * .85);
+      c = jitter(c, .035);
     }
     colors.push(c.r, c.g, c.b);
   }
@@ -156,17 +164,13 @@ export function makeLand({ center, width, depth, sea }) {
   water.position.set(center.x, sea, center.z);
   group.add(water);
 
-  /* a scatter of round trees on the hills */
-  land.updateMatrixWorld();
-  const height = (x, z) => {
-    const ray = new THREE.Raycaster(new THREE.Vector3(x, 200, z), new THREE.Vector3(0, -1, 0));
-    const hit = ray.intersectObject(land)[0];
-    return hit ? hit.point.y : sea - 5;
-  };
-  for (let i = 0; i < 26; i++) {
+  /* trees gather in the darker, wooded patches */
+  for (let i = 0, placed = 0; i < 400 && placed < 30; i++) {
     const x = center.x + (rand() - .5) * width * .9, z = center.z + (rand() - .5) * depth * .6;
-    const y = height(x, z);
-    if (y > sea + 1.5) group.add(makeTree(x, z, 1.4 + rand() * 1.2, rand() < .25, () => y));
+    const y = heightAt(x, z);
+    if (y < sea + 2 || y > sea + 17 || fbm(x * .018, 5.5, z * .018) < .5) continue;
+    group.add(makeTree(x, z, 1.4 + rand() * 1.2, false, () => y - .3));
+    placed++;
   }
   return group;
 }

@@ -7,7 +7,7 @@ const ui = createUI({ site, projects });
 /* the 3D world loads after the page is usable; without WebGL the page still works */
 import("./world.js")
   .then(({ createWorld }) => {
-    const world = createWorld(document.querySelector(".world"), { projects, stops: site.stops });
+    const world = createWorld(document.querySelector(".world"), { projects, steps: ui.steps });
     ui.attach(world);
     document.documentElement.classList.add("world-ready");
   })
