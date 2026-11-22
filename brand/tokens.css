@@ -1,0 +1,83 @@
+/* Portfolio brand tokens: light = paper, dark = Dusk.
+   Switch modes with <html data-theme="dark">. */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..700,0..100,0..1;1,9..144,300..700,0..100,0..1&family=Instrument+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap");
+
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --paper: #EFE9D8;
+  --card: #F6F2E6;
+  --sunk: #E2D8BE;
+  --border: #C9BB98;
+
+  /* text and UI */
+  --ink: #2E2B26;
+  --muted: #66615A;
+  --link: #356283;
+  --rose-text: #A8445E;
+  --sage-text: #4F7345;
+  --btn: #A8445E;
+  --on-btn: #FBF8F0;
+
+  /* art: illustration fills only, never text */
+  --rose: #D9667F;
+  --sage: #6E9A62;
+  --butter: #E5C36A;
+  --sky: #7194AA;
+  --center: #3F6E8F;
+  --line-w: 2;
+
+  /* type */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Instrument Sans", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, monospace;
+
+  --step-display: clamp(2.5rem, 1.9rem + 2.6vw, 3.5rem);
+  --step-h1: clamp(2rem, 1.6rem + 1.6vw, 2.5rem);
+  --step-h2: clamp(1.6rem, 1.4rem + 0.8vw, 1.95rem);
+  --step-h3: 1.25rem;
+  --step-body: 1rem;
+  --step-aside: 1.125rem;
+  --step-code: 0.875rem;
+  --step-label: 0.75rem;
+
+  --lh-display: 1.0;
+  --lh-h1: 1.05;
+  --lh-h2: 1.1;
+  --lh-h3: 1.25;
+  --lh-body: 1.5;
+  --lh-aside: 1.4;
+  --lh-mono: 1.4;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --paper: #1B2430;
+  --card: #233041;
+  --sunk: #162029;
+  --border: #34435A;
+
+  --ink: #EDE6D2;
+  --muted: #A3AEBB;
+  --link: #9CBFDB;
+  --rose-text: #F0A0AE;
+  --sage-text: #A9CB9E;
+  --btn: #E8899A;
+  --on-btn: #1B2430;
+
+  --rose: #E8899A;
+  --sage: #94BB8A;
+  --butter: #E7CE86;
+  --sky: #8FB2CF;
+  --center: #E7CE86;
+}
+
+.display { font-family: var(--font-display); font-size: var(--step-display); line-height: var(--lh-display); font-weight: 400; font-variation-settings: "SOFT" 100, "WONK" 1; }
+h1, h2 { font-family: var(--font-display); font-weight: 400; font-variation-settings: "SOFT" 50, "WONK" 0; }
+h1 { font-size: var(--step-h1); line-height: var(--lh-h1); }
+h2 { font-size: var(--step-h2); line-height: var(--lh-h2); }
+h3 { font-family: var(--font-body); font-size: var(--step-h3); line-height: var(--lh-h3); font-weight: 500; }
+.aside { font-family: var(--font-display); font-style: italic; font-size: var(--step-aside); line-height: var(--lh-aside); color: var(--muted); }
+.label { font-family: var(--font-mono); font-size: var(--step-label); letter-spacing: .04em; line-height: var(--lh-mono); color: var(--muted); }

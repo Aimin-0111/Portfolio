@@ -1,0 +1,9 @@
+# local research material (reference images belong to their authors)
+research/
+
+# local editor and tool settings
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
