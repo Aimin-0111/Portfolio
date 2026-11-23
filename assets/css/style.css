@@ -29,6 +29,8 @@ h1, h2, h3 { margin: 0; }
 .theme-toggle { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--card); color: var(--ink); }
 .theme-toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 [data-theme="light"] .icon-moon, [data-theme="dark"] .icon-sun { display: none; }
+.lang-toggle { height: 32px; min-width: 32px; padding: 0 .5rem; border-radius: 999px; background: var(--card); color: var(--ink); font-family: var(--font-mono); font-size: var(--step-label); letter-spacing: .04em; }
+.lang-toggle:hover, .theme-toggle:hover { filter: brightness(.97); }
 
 /* the text for each stop, shown when you arrive */
 .stops { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
@@ -83,6 +85,10 @@ h1, h2, h3 { margin: 0; }
 .tags { display: flex; flex-wrap: wrap; gap: .3rem; list-style: none; padding: 0; margin: .4rem 0 0; }
 .tags li { font-family: var(--font-mono); font-size: var(--step-label); padding: .05rem .5rem; border-radius: 999px; background: var(--sunk); color: var(--muted); }
 .links { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-top: 1rem; }
+.facts { margin: 1rem 0 0; display: grid; }
+.facts div { display: grid; grid-template-columns: 6rem 1fr; gap: .75rem; align-items: baseline; padding: .45rem 0; border-top: 1px solid var(--rule); }
+.facts dd { margin: 0; }
+.shot figcaption { margin-top: .35rem; color: var(--muted); font-size: .88rem; line-height: 1.4; }
 
 /* project detail */
 .sheet-scrim { position: fixed; inset: 0; z-index: 25; background: color-mix(in srgb, var(--paper) 25%, transparent); opacity: 0; pointer-events: none; transition: opacity .4s; }

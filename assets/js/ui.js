@@ -1,54 +1,70 @@
 /*
   Page UI: builds the text for each place from the content files, turns scrolling into travel,
-  and opens a detail sheet for each project at #/work/<id>.
+  and opens a detail sheet for each project at #/work/<id>. #/work and #/about jump to a place.
+  English and French: content text can be { en, fr } (see content/site.js); the button in the
+  header switches, and the choice is remembered.
   Works without the 3D world too (no WebGL): everything stays readable.
 */
 
+/* the interface's own words */
+const WORDS = {
+  en: { pieces: "pieces", more: "Read about it", prev: "Previous", next: "Next", close: "close", theme: "Switch light and dark mode", lang: "Lire en français", sections: "Sections", places: "Places" },
+  fr: { pieces: "œuvres", more: "En savoir plus", prev: "Précédent", next: "Suivant", close: "fermer", theme: "Passer en mode clair ou sombre", lang: "Read in English", sections: "Sections", places: "Lieux" },
+};
+const LANGS = Object.keys(WORDS);
+let lang = localStorage.getItem("lang") || ((navigator.language || "").toLowerCase().startsWith("fr") ? "fr" : "en");
+if (!LANGS.includes(lang)) lang = "en";
+
+/* pick the current language from a { en, fr } text; plain text and lists pass through */
+const t = (v) => (v == null ? "" : Array.isArray(v) ? v.map(t) : typeof v === "object" && LANGS.some((l) => l in v) ? t(v[lang] ?? v.en) : v);
+const W = () => WORDS[lang];
+
 const esc = (s = "") => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const link = ({ label, url }) => `<a href="${esc(url)}"${/^https?:/.test(url) ? ' target="_blank" rel="noopener"' : ""}>${esc(label)}</a>`;
-const tags = (list = []) => `<ul class="tags">${list.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>`;
+const link = ({ label, url }) => `<a href="${esc(url)}"${/^https?:/.test(url) ? ' target="_blank" rel="noopener"' : ""}>${esc(t(label))}</a>`;
+const tags = (list = []) => `<ul class="tags">${list.map((x) => `<li>${esc(t(x))}</li>`).join("")}</ul>`;
 const num = (n) => String(n).padStart(2, "0");
-const shot = (p, cls) => (p.image?.src ? `<figure class="${cls}"><img src="${esc(p.image.src)}" alt="${esc(p.image.alt || "")}" loading="lazy"></figure>` : "");
+const shot = (p, cls) => (p.image?.src ? `<figure class="${cls}"><img src="${esc(p.image.src)}" alt="${esc(t(p.image.alt))}" loading="lazy"></figure>` : "");
 
 /* the text shown at each stop */
 const PANELS = {
   home: (site) => `
-    <h1 class="mega">${site.home.title}</h1>
-    <p class="lede">${esc(site.home.intro)}</p>
-    <button class="cta" type="button" data-go="work">See the work <span aria-hidden="true">→</span></button>`,
+    <h1 class="mega">${t(site.home.title)}</h1>
+    <p class="lede">${esc(t(site.home.intro))}</p>
+    <button class="cta" type="button" data-go="work">${esc(t(site.home.cta))} <span aria-hidden="true">→</span></button>`,
 
   /* the gallery wall: every piece at a glance */
   work: (site, projects) => `
     <div class="wall">
-      <p class="label">${projects.length} pieces</p>
-      <h2>${esc(site.work.title)}</h2>
-      <p class="lede">${esc(site.work.intro)}</p>
+      <p class="label">${projects.length} ${W().pieces}</p>
+      <h2>${esc(t(site.work.title))}</h2>
+      <p class="lede">${esc(t(site.work.intro))}</p>
       <ol class="guide">
         ${projects.map((p, i) => `
           <li><a href="#/work/${esc(p.id)}" data-piece="${i}">
-            <span class="label">${num(i + 1)}</span><span class="t">${esc(p.title)}</span><span class="k">${esc(p.kind)}</span>
+            <span class="label">${num(i + 1)}</span><span class="t">${esc(t(p.title))}</span><span class="k">${esc(t(p.kind))}</span>
           </a></li>`).join("")}
       </ol>
     </div>`,
 
   notes: (site) => `
     <div class="wall">
-      <h2>${esc(site.notes.title)}</h2>
-      <p class="lede">${esc(site.notes.intro)}</p>
+      <h2>${esc(t(site.notes.title))}</h2>
+      <p class="lede">${esc(t(site.notes.intro))}</p>
       <ol class="guide notes">
         ${site.notes.items.map((n, i) => `
           <li>${n.url ? `<a href="${esc(n.url)}">` : "<div>"}
             <span class="label">${num(i + 1)}</span>
-            <span class="t">${esc(n.title)}${n.about ? `<span class="teaser">${esc(n.about)}</span>` : ""}</span>
-            <span class="k label">${esc(n.date)}</span>
+            <span class="t">${esc(t(n.title))}${n.about ? `<span class="teaser">${esc(t(n.about))}</span>` : ""}</span>
+            <span class="k label">${esc(t(n.date))}</span>
           ${n.url ? "</a>" : "</div>"}</li>`).join("")}
       </ol>
     </div>`,
 
   about: (site) => `
     <div class="wall">
-      <h2>${esc(site.about.title)}</h2>
-      ${site.about.text.map((p) => `<p>${esc(p)}</p>`).join("")}
+      <h2>${esc(t(site.about.title))}</h2>
+      ${t(site.about.text).map((p) => `<p>${esc(p)}</p>`).join("")}
+      ${site.about.facts?.length ? `<dl class="facts">${site.about.facts.map((f) => `<div><dt class="label">${esc(t(f.label))}</dt><dd>${esc(t(f.text))}</dd></div>`).join("")}</dl>` : ""}
       <p class="links">${site.about.contact.map(link).join("")}</p>
     </div>`,
 };
@@ -58,16 +74,16 @@ const PIECE = (p, i, n) => `
   <article class="plaque">
     ${shot(p, "plaque-shot")}
     <p class="label">${num(i + 1)} <span class="muted">/ ${num(n)}</span></p>
-    <h2>${esc(p.title)}</h2>
-    <p class="medium">${esc(p.kind)}, ${esc(p.year)}</p>
-    <p class="credit">${esc(p.role)}</p>
-    <p class="desc">${esc(p.summary)}</p>
-    <p class="label materials">${p.tags.map(esc).join(" · ")}</p>
+    <h2>${esc(t(p.title))}</h2>
+    <p class="medium">${esc(t(p.kind))}, ${esc(t(p.year))}</p>
+    <p class="credit">${esc(t(p.role))}</p>
+    <p class="desc">${esc(t(p.summary))}</p>
+    <p class="label materials">${(p.tags || []).map((x) => esc(t(x))).join(" · ")}</p>
     <div class="plaque-foot">
-      <a class="more" href="#/work/${esc(p.id)}">Read about it <span aria-hidden="true">→</span></a>
+      <a class="more" href="#/work/${esc(p.id)}">${W().more} <span aria-hidden="true">→</span></a>
       <span class="walk">
-        <button type="button" data-walk="-1" aria-label="Previous">←</button>
-        <button type="button" data-walk="1" aria-label="Next">→</button>
+        <button type="button" data-walk="-1" aria-label="${W().prev}">←</button>
+        <button type="button" data-walk="1" aria-label="${W().next}">→</button>
       </span>
     </div>
   </article>`;
@@ -88,22 +104,45 @@ export function createUI({ site, projects }) {
   const stops = [...new Set(steps.map((s) => s.stop))];
   const first = (id) => steps.findIndex((s) => s.stop === id);
   const pieceStep = (i) => steps.findIndex((s) => s.stop === "work" && s.piece === i);
-  const title = (id) => esc(site[id]?.title || id);
+  const title = (id) => esc(t(site[id]?.title || id));
+  const navName = (id) => esc(t(site[id]?.nav || site[id]?.title || id)).toLowerCase();
   const root = document.documentElement;
+  const sheet = document.querySelector(".sheet");
+  const body = sheet.querySelector(".sheet-body");
+  let panels = [], dots = [], current = -1, lastFocus = null;
 
-  /* build the page */
-  document.querySelector(".brand").textContent = site.name;
-  document.title = `${site.name} · portfolio`;
-  document.querySelector(".nav-links").innerHTML = stops.slice(1).map((id) => `<button type="button" data-go="${id}">${title(id).toLowerCase()}</button>`).join("");
-  document.querySelector(".stops").innerHTML = steps.map((s, k) => s.piece >= 0
-    ? `<section class="stop stop-piece" data-step="${k}" aria-label="${esc(projects[s.piece].title)}">${PIECE(projects[s.piece], s.piece, projects.length)}</section>`
-    : `<section class="stop stop-${s.stop}" data-step="${k}" aria-label="${title(s.stop)}">${PANELS[s.stop](site, projects)}</section>`).join("");
-  document.querySelector(".dots").innerHTML = stops.map((id) => `<button type="button" data-go="${id}" aria-label="${title(id)}"><i></i><span>${esc(id)}</span></button>`).join("");
+  /* build (or rebuild, after switching language) every piece of text on the page */
+  function build() {
+    root.lang = lang;
+    document.querySelector(".brand").textContent = site.name;
+    document.title = `${site.name} · portfolio`;
+    document.querySelector(".nav-links").innerHTML = stops.slice(1).map((id) => `<button type="button" data-go="${id}">${navName(id)}</button>`).join("");
+    document.querySelector(".site-header nav").setAttribute("aria-label", W().sections);
+    document.querySelector(".stops").innerHTML = steps.map((s, k) => s.piece >= 0
+      ? `<section class="stop stop-piece" data-step="${k}" aria-label="${esc(t(projects[s.piece].title))}">${PIECE(projects[s.piece], s.piece, projects.length)}</section>`
+      : `<section class="stop stop-${s.stop}" data-step="${k}" aria-label="${title(s.stop)}">${PANELS[s.stop](site, projects)}</section>`).join("");
+    const dotsNav = document.querySelector(".dots");
+    dotsNav.setAttribute("aria-label", W().places);
+    dotsNav.innerHTML = stops.map((id) => `<button type="button" data-go="${id}" aria-label="${title(id)}"><i></i><span>${navName(id)}</span></button>`).join("");
+    const other = LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
+    const langBtn = document.querySelector(".lang-toggle");
+    langBtn.textContent = other.toUpperCase();
+    langBtn.setAttribute("aria-label", W().lang);
+    langBtn.setAttribute("lang", other);
+    document.querySelector(".theme-toggle").setAttribute("aria-label", W().theme);
+    sheet.querySelector(".sheet-close").textContent = `${W().close} ✕`;
+    panels = [...document.querySelectorAll(".stop")];
+    dots = [...document.querySelectorAll(".dots [data-go]")];
+    /* pointing at a piece in the room guide lifts its frame */
+    document.querySelectorAll("[data-piece]").forEach((a) => {
+      a.addEventListener("pointerenter", () => world?.highlight(+a.dataset.piece));
+      a.addEventListener("pointerleave", () => world?.highlight(-1));
+    });
+    if (current >= 0) render(current);
+  }
   document.querySelector(".track").innerHTML = steps.map(() => "<div></div>").join("");
 
   /* scrolling = travelling */
-  const panels = [...document.querySelectorAll(".stop")];
-  const dots = [...document.querySelectorAll(".dots [data-go]")];
   let progress = 0, near = 0;
   function onScroll() {
     progress = Math.min(steps.length - 1, Math.max(0, scrollY / innerHeight || 0));
@@ -121,37 +160,30 @@ export function createUI({ site, projects }) {
     if (walk) goStep(near + +walk.dataset.walk);
   });
 
-  /* pointing at a piece in the room guide lifts its frame */
-  document.querySelectorAll("[data-piece]").forEach((a) => {
-    a.addEventListener("pointerenter", () => world?.highlight(+a.dataset.piece));
-    a.addEventListener("pointerleave", () => world?.highlight(-1));
-  });
-
   /* project detail sheet, routed by #/work/<id> */
-  const sheet = document.querySelector(".sheet");
-  const body = sheet.querySelector(".sheet-body");
-  let current = -1, lastFocus = null;
   function render(i) {
     const p = projects[i];
     const prev = projects[(i - 1 + projects.length) % projects.length], next = projects[(i + 1) % projects.length];
     body.innerHTML = `
-      <p class="label">${num(i + 1)} / ${num(projects.length)} · ${esc(p.kind)} · ${esc(p.year)}</p>
-      <h2 id="sheet-title">${esc(p.title)}</h2>
-      <p class="role">${esc(p.role)}</p>
+      <p class="label">${num(i + 1)} / ${num(projects.length)} · ${esc(t(p.kind))} · ${esc(t(p.year))}</p>
+      <h2 id="sheet-title">${esc(t(p.title))}</h2>
+      <p class="role">${esc(t(p.role))}</p>
       ${shot(p, "shot")}
-      <p class="lead">${esc(p.summary)}</p>
-      ${p.details.map((d) => `<p>${esc(d)}</p>`).join("")}
+      <p class="lead">${esc(t(p.summary))}</p>
+      ${t(p.details).map((d) => `<p>${esc(d)}</p>`).join("")}
+      ${(p.gallery || []).map((g) => `<figure class="shot"><img src="${esc(g.src)}" alt="" loading="lazy"><figcaption>${esc(t(g.alt))}</figcaption></figure>`).join("")}
       ${tags(p.tags)}
-      ${p.links.length ? `<p class="links">${p.links.map(link).join("")}</p>` : ""}
+      ${p.links?.length ? `<p class="links">${p.links.map(link).join("")}</p>` : ""}
       <nav class="sheet-nav">
-        <a href="#/work/${esc(prev.id)}">← ${esc(prev.title)}</a>
-        <a href="#/work/${esc(next.id)}">${esc(next.title)} →</a>
+        <a href="#/work/${esc(prev.id)}">← ${esc(t(prev.title))}</a>
+        <a href="#/work/${esc(next.id)}">${esc(t(next.title))} →</a>
       </nav>`;
   }
   function openSheet(i) {
     if (current === -1) lastFocus = document.activeElement;
     current = i;
     render(i);
+    sheet.scrollTop = 0;
     world?.highlight(-1);
     if (Math.abs(progress - pieceStep(i)) > .05) goStep(pieceStep(i), "instant");
     sheet.hidden = false;
@@ -170,12 +202,15 @@ export function createUI({ site, projects }) {
     if (location.hash.startsWith("#/work/")) history.replaceState(null, "", location.pathname + location.search);
     lastFocus?.focus?.({ preventScroll: true });
   }
-  function route() {
-    const m = location.hash.match(/^#\/work\/([\w-]+)/);
-    const i = m ? projects.findIndex((p) => p.id === m[1]) : -1;
-    if (i >= 0) openSheet(i); else closeSheet();
+  /* #/work/<id> opens a project; #/<stop> (like #/about) goes to that place */
+  function route(behavior = "smooth") {
+    const m = location.hash.match(/^#\/([\w-]+)(?:\/([\w-]+))?/);
+    const i = m && m[1] === "work" && m[2] ? projects.findIndex((p) => p.id === m[2]) : -1;
+    if (i >= 0) return openSheet(i);
+    closeSheet();
+    if (m && first(m[1]) >= 0) goStep(first(m[1]), behavior);
   }
-  addEventListener("hashchange", route);
+  addEventListener("hashchange", () => route());
   sheet.querySelector(".sheet-close").addEventListener("click", closeSheet);
   document.querySelector(".sheet-scrim").addEventListener("click", closeSheet);
   addEventListener("keydown", (e) => {
@@ -198,8 +233,17 @@ export function createUI({ site, projects }) {
     localStorage.setItem("theme", next);
   });
 
+  /* English / French */
+  document.querySelector(".lang-toggle").addEventListener("click", () => {
+    lang = LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
+    localStorage.setItem("lang", lang);
+    build();
+    onScroll();
+  });
+
+  build();
   onScroll();
-  route();
+  route("instant");
 
   return {
     steps,

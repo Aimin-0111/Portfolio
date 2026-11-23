@@ -3,13 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>portfolio</title>
-<meta name="description" content="Projects by a student developer: apps, games, robots and small experiments, in a small painted world.">
+<title>Haiyang Tuo · portfolio</title>
+<meta name="description" content="Haiyang Tuo: apps, games, robots and small experiments, shown in a small painted world.">
 <script>
   (() => {
     const saved = localStorage.getItem("theme");
     const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
     document.documentElement.dataset.theme = dark ? "dark" : "light";
+    const lang = localStorage.getItem("lang") || ((navigator.language || "").toLowerCase().startsWith("fr") ? "fr" : "en");
+    document.documentElement.lang = lang === "fr" ? "fr" : "en";
   })();
 </script>
 <link rel="stylesheet" href="brand/tokens.css">
@@ -25,6 +27,7 @@
   <button class="brand label" type="button" data-go="home"></button>
   <nav class="label" aria-label="Sections">
     <span class="nav-links"></span>
+    <button class="lang-toggle" type="button"></button>
     <button class="theme-toggle" type="button" aria-label="Switch light and dark mode">
       <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>
       <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>

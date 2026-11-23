@@ -2,8 +2,10 @@
 
 My portfolio as a small painted world. Scrolling flies you through it: the home island, a gallery where each project hangs as a framed painting, and a quiet island for the about page. Every frame of the 3D scene is run through a brushstroke filter, so it looks painted rather than rendered.
 
+- English and French (the button in the header switches; the choice is remembered)
 - Light and dusk modes (the sun sets, the tower window lights up, fireflies come out)
 - A gallery wall with every project, a museum-style label beside each piece, and a detail page for each one at `#/work/<id>`
+- Links to each place: `#/work`, `#/about`
 - Works without WebGL: all text stays readable on a plain painted background
 - Respects "reduce motion" settings
 - Keyboard: <kbd>←</kbd> <kbd>→</kbd> walk between pieces (or projects, when one is open), <kbd>Esc</kbd> closes a project, <kbd>M</kbd> switches to an ink-drawing style
@@ -22,6 +24,8 @@ Then open <http://localhost:4173>.
 
 All text lives in two files. You don't need to touch the code for everyday changes.
 
+Any text can be written once, or in both languages as `{ en: "...", fr: "..." }`. If the French is missing, the English is shown.
+
 | File | What it holds |
 |---|---|
 | `content/projects.js` | The projects, in order |
@@ -36,10 +40,11 @@ Copy an entry in `content/projects.js` and change it:
 {
   id: "my-project",              // used in the link: #/work/my-project
   title: "My project",
-  kind: "Game · Unity",
+  kind: { en: "Game · Unity", fr: "Jeu · Unity" },
   year: "2026",
   role: "Solo project",
   image: { src: "content/media/my-project.jpg", alt: "What the picture shows" },
+  gallery: [{ src: "content/media/my-project-2.jpg", alt: "More pictures for the detail page" }],
   island: "keep",                // only used without an image: keep, pin, voxel, robot, chip, moon or tree
   summary: "One or two sentences for the overview.",
   details: ["A paragraph for the detail page.", "Another one."],
